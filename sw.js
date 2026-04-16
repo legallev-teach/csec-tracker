@@ -1,6 +1,6 @@
 const CACHE_NAME = 'csec-tracker-v1';
 const FILES = [
-  './csec-tracker.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
