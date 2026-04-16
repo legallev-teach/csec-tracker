@@ -2,7 +2,7 @@
   "name": "CSEC Tracker",
   "short_name": "CSEC",
   "description": "Track your CSEC past papers. Hit 15 Paper 2s per subject.",
-  "start_url": "./csec-tracker.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#090910",
   "theme_color": "#090910",
