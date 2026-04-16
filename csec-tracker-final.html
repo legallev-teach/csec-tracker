@@ -1,0 +1,2496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#090910">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CSEC Tracker">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>CSEC Tracker</title>
+<style>
+  /* All fonts are system fonts — no network dependency, works offline and from local files */
+
+  /* Fallback numeric font stack for sandboxed/offline contexts */
+
+  :root {
+    --bg: #090910;
+    --surface: #12121e;
+    --surface2: #1a1a2e;
+    --border: rgba(255,255,255,0.07);
+    --text: #f0f0f8;
+    --text-muted: rgba(240,240,248,0.45);
+    --text-dim: rgba(240,240,248,0.25);
+    --starting: #ef4444;
+    --building: #f59e0b;
+    --strong: #10b981;
+    --bonus: #8b5cf6;
+    --accent: #6366f1;
+    --accent2: #a78bfa;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    overscroll-behavior: none;
+  }
+
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .screen { display: none; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: linear-gradient(to bottom, var(--bg) 80%, transparent);
+  }
+  .topbar-title {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: -0.3px;
+  }
+  .topbar-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.15s;
+  }
+  .topbar-btn:active { background: var(--surface); }
+
+  /* ── WELCOME SCREEN ── */
+  #screen-welcome {
+    justify-content: center;
+    padding: 40px 28px;
+    gap: 0;
+  }
+  .welcome-logo {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent), #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .welcome-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 48px;
+    line-height: 1.6;
+  }
+  .welcome-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .input-field {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-size: 16px;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 24px;
+  }
+  .input-field:focus { border-color: var(--accent); }
+  .input-field::placeholder { color: var(--text-dim); }
+
+  .welcome-subjects-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .subject-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .subject-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .subject-chip.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 16px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── DASHBOARD ── */
+  #screen-dashboard { padding-bottom: 80px; }
+  .dashboard-header {
+    padding: 0 20px 24px;
+  }
+  .dashboard-greeting {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .dashboard-name {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: -0.5px;
+  }
+  .dashboard-stats {
+    display: flex;
+    gap: 10px;
+    padding: 0 20px 20px;
+  }
+  .stat-pill {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .stat-pill-num {
+    font-family: 'Space Grotesk', 'Trebuchet MS', 'Gill Sans', Arial, sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 3px;
+  }
+  .stat-pill-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px 12px;
+  }
+  .section-title {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .section-action {
+    font-size: 12px;
+    color: var(--accent2);
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .subjects-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 20px;
+  }
+  .subject-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .subject-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--tier-color, var(--border));
+    border-radius: 2px 2px 0 0;
+  }
+  .subject-card:active { background: var(--surface2); transform: scale(0.97); }
+  .subject-card-name {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 10px;
+    line-height: 1.3;
+    min-height: 34px;
+  }
+  .subject-card-p2 {
+    font-family: 'Space Grotesk', 'Trebuchet MS', 'Gill Sans', Arial, sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--tier-color, var(--text-muted));
+    margin-bottom: 2px;
+  }
+  .subject-card-target {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .mini-bar-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .mini-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--tier-color, var(--text-muted));
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .subject-card-badges {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .tier-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--tier-color) 15%, transparent);
+    color: var(--tier-color);
+    letter-spacing: 0.3px;
+  }
+  .variety-badge {
+    font-size: 11px;
+  }
+  .p1-count {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-left: auto;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 28px;
+    color: var(--text-muted);
+  }
+  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state-title {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .empty-state-text { font-size: 13px; line-height: 1.6; }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: max(24px, calc(50% - 216px));
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+    z-index: 100;
+  }
+  .fab:active { transform: scale(0.92); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+
+  /* ── DETAIL SCREEN ── */
+  #screen-detail { padding-bottom: 40px; }
+  .detail-hero {
+    padding: 8px 20px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .detail-subject-name {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.3px;
+    margin-bottom: 24px;
+    line-height: 1.2;
+  }
+  .arc-container {
+    position: relative;
+    width: 160px; height: 160px;
+    margin-bottom: 12px;
+  }
+  .arc-canvas { width: 160px; height: 160px; }
+  .arc-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -54%);
+    text-align: center;
+  }
+  .arc-num {
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    font-weight: 800;
+    font-size: 40px;
+    line-height: 1;
+    letter-spacing: -0.5px;
+    transform: translateY(-3px);
+    font-variant-numeric: tabular-nums;
+    display: block;
+  }
+  .arc-denom {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+  .detail-tier-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .detail-tier-badge {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .detail-pace {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .detail-p1 {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .detail-variety {
+    font-size: 12px;
+    color: var(--building);
+    margin-top: 4px;
+  }
+
+  .add-paper-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 0 20px 20px;
+  }
+  .form-title {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .form-row { margin-bottom: 14px; }
+  .form-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .toggle-group {
+    display: flex;
+    gap: 8px;
+  }
+  .toggle-btn {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .toggle-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .toggle-btn.paper2.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: var(--accent);
+  }
+  select.input-field { margin-bottom: 0; cursor: pointer; }
+  .form-error {
+    font-size: 12px;
+    color: var(--starting);
+    margin-top: 8px;
+    display: none;
+  }
+  .form-error.show { display: block; }
+  .btn-log {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 14px;
+    cursor: pointer;
+    margin-top: 16px;
+    letter-spacing: 0.5px;
+    transition: opacity 0.15s;
+  }
+  .btn-log:active { opacity: 0.85; }
+
+  .papers-list {
+    padding: 0 20px;
+  }
+  .paper-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .paper-item.new-entry {
+    background: rgba(99,102,241,0.08);
+    margin: 0 -20px;
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+  }
+  .paper-pill {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+  .paper-pill.p2 {
+    background: rgba(99,102,241,0.2);
+    color: var(--accent2);
+  }
+  .paper-pill.p1 {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-dim);
+  }
+  .paper-info {
+    flex: 1;
+    font-size: 14px;
+  }
+  .paper-info-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .paper-marked {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 4px 10px;
+    transition: all 0.15s;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .paper-marked input { display: none; }
+  .paper-marked.is-marked {
+    color: var(--strong);
+    background: rgba(16,185,129,0.12);
+    border-color: rgba(16,185,129,0.3);
+  }
+  .paper-remove {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.15);
+    border-radius: 20px;
+    color: rgba(239,68,68,0.5);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 10px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .paper-remove:active { background: rgba(239,68,68,0.2); color: var(--starting); }
+
+  .share-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: calc(100% - 40px);
+    margin: 20px 20px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 14px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background 0.15s;
+  }
+  .share-btn:active { background: var(--surface2); }
+
+  /* ── MANAGE SUBJECTS ── */
+  #screen-manage { padding-bottom: 40px; }
+  .manage-list { padding: 0 20px; margin-bottom: 24px; }
+  .manage-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .manage-item-name { font-size: 15px; font-weight: 500; }
+  .manage-item-count { font-size: 12px; color: var(--text-muted); }
+  .btn-remove-subject {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: var(--radius-sm);
+    color: var(--starting);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-remove-subject:active { background: rgba(239,68,68,0.2); }
+
+  .add-subject-form {
+    padding: 0 20px;
+  }
+  .datalist-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-size: 15px;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 10px;
+  }
+  .datalist-input:focus { border-color: var(--accent); }
+  .btn-add-subject {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-add-subject:active { background: var(--surface2); }
+
+  /* ── SETTINGS ── */
+  #screen-settings { padding-bottom: 40px; }
+  .settings-section {
+    padding: 0 20px 24px;
+  }
+  .settings-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .settings-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 14px 16px;
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 8px;
+    transition: background 0.15s;
+  }
+  .settings-btn:active { background: var(--surface2); }
+  .settings-btn-icon { font-size: 18px; }
+  .settings-btn.danger { color: var(--starting); border-color: rgba(239,68,68,0.2); }
+  .settings-name-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .settings-name-row .input-field { margin-bottom: 0; flex: 1; }
+  .btn-save-name {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 14px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .settings-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0 24px;
+  }
+
+  .find-link {
+    display: block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--accent2);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 13px 16px;
+    margin-bottom: 8px;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .find-link:active { background: var(--surface); }
+  .find-tip {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    padding: 12px;
+    background: rgba(99,102,241,0.07);
+    border-radius: var(--radius-sm);
+    margin-top: 4px;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 200;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── LOG PAPER MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(9,9,16,0.85);
+    z-index: 150;
+    align-items: flex-end;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 24px 40px;
+    animation: sheetUp 0.25s cubic-bezier(.4,0,.2,1);
+  }
+  @keyframes sheetUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+  .modal-title {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+  .modal-subject-select {
+    margin-bottom: 14px;
+  }
+  .modal-subject-select .form-label { margin-bottom: 6px; display: block; }
+
+  .generating-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(9,9,16,0.9);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: blur(8px);
+  }
+  .generating-overlay.open { display: flex; }
+  .generating-text {
+    font-family: 'Trebuchet MS', 'Century Gothic', 'Gill Sans', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-muted);
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- WELCOME -->
+  <div id="screen-welcome" class="screen">
+    <div class="welcome-logo">CSEC<br>Tracker</div>
+    <p class="welcome-sub">Track your past papers. Hit 15 Paper 2s per subject. Own your prep.</p>
+    <div class="welcome-label">Your name</div>
+    <input class="input-field" id="welcome-name" type="text" placeholder="e.g. Keisha" autocomplete="off">
+    <div class="welcome-subjects-label">Pick your subjects</div>
+    <div class="subject-chips" id="welcome-chips"></div>
+    <button class="btn-primary" id="welcome-start" disabled>Let's Go →</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="screen-dashboard" class="screen">
+    <div class="topbar">
+      <div class="topbar-title">CSEC Tracker</div>
+      <div style="display:flex;gap:8px;">
+        <button class="topbar-btn" id="btn-manage" title="Manage Subjects">📚</button>
+        <button class="topbar-btn" id="btn-settings" title="Settings">⚙️</button>
+      </div>
+    </div>
+    <div class="dashboard-header">
+      <div class="dashboard-greeting">Welcome back,</div>
+      <div class="dashboard-name" id="dash-name">—</div>
+    </div>
+    <div class="dashboard-stats" id="dash-stats"></div>
+    <div class="section-header">
+      <div class="section-title">Subjects</div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="section-action" id="btn-find-papers-dash">🔍 Find Papers</div>
+        <div class="section-action" id="btn-share-all">Share All ↗</div>
+      </div>
+    </div>
+    <div class="subjects-grid" id="subjects-grid"></div>
+    <div id="save-nudge" style="display:none;margin:16px 20px 0;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(167,139,250,0.08));border:1px solid rgba(99,102,241,0.25);border-radius:var(--radius);padding:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px;">You've put in real work. Don't let it disappear.</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6;">Save a code to WhatsApp so your progress is never lost — even if you switch phones.</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" id="nudge-save-btn" style="padding:10px 16px;font-size:13px;">Save My Progress</button>
+        <button id="nudge-dismiss-btn" style="background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;padding:10px;">Not now</button>
+      </div>
+    </div>
+    <button class="fab" id="fab-log">+</button>
+  </div>
+
+  <!-- DETAIL -->
+  <div id="screen-detail" class="screen">
+    <div class="topbar">
+      <button class="topbar-btn" id="detail-back">←</button>
+      <div class="topbar-title" id="detail-topbar-title">Subject</div>
+      <div style="width:38px;"></div>
+    </div>
+    <div class="detail-hero">
+      <div class="detail-subject-name" id="detail-name">—</div>
+      <div class="arc-container">
+        <canvas class="arc-canvas" id="arc-canvas" width="320" height="320"></canvas>
+        <div class="arc-center">
+          <div class="arc-num" id="arc-num">0</div>
+          <div class="arc-denom">/ 15 P2s</div>
+        </div>
+      </div>
+      <div class="detail-tier-row">
+        <div class="detail-tier-badge" id="detail-tier-badge">Starting</div>
+        <div id="detail-variety-badge"></div>
+      </div>
+      <div class="detail-pace" id="detail-pace"></div>
+      <div class="detail-p1" id="detail-p1"></div>
+    </div>
+    <button class="share-btn" id="detail-share-btn">✦ Share</button>
+    <button class="share-btn" id="detail-find-papers-btn" style="margin-top:8px;">🔍 Find Past Papers</button>
+    <div style="height:20px;"></div>
+    <div class="add-paper-form" id="detail-add-form">
+      <div class="form-title">Log a Paper</div>
+      <div class="form-row">
+        <div class="form-label">Year</div>
+        <select class="input-field" id="form-year"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Session</div>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="toggle-jan" data-val="January">January</button>
+          <button class="toggle-btn" id="toggle-jun" data-val="June">June</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Paper</div>
+        <div class="toggle-group">
+          <button class="toggle-btn paper2 active" id="toggle-p2" data-val="2">Paper 2</button>
+          <button class="toggle-btn" id="toggle-p1" data-val="1">Paper 1</button>
+        </div>
+      </div>
+      <div class="form-error" id="form-error">Already logged this paper.</div>
+      <button class="btn-log" id="btn-log-paper">Log Paper</button>
+    </div>
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-title">Papers Logged</div>
+    </div>
+    <div class="papers-list" id="papers-list"></div>
+  </div>
+
+  <!-- MANAGE SUBJECTS -->
+  <div id="screen-manage" class="screen">
+    <div class="topbar">
+      <button class="topbar-btn" id="manage-back">←</button>
+      <div class="topbar-title">Subjects</div>
+      <div style="width:38px;"></div>
+    </div>
+    <div class="manage-list" id="manage-list"></div>
+    <div class="add-subject-form">
+      <div class="form-label" style="margin-bottom:8px;">Add a subject</div>
+      <input class="datalist-input" id="add-subject-input" list="default-subjects-list" placeholder="Type or pick a subject..." autocomplete="off">
+      <datalist id="default-subjects-list"></datalist>
+      <button class="btn-add-subject" id="btn-add-subject">+ Add Subject</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="screen-settings" class="screen">
+    <div class="topbar">
+      <button class="topbar-btn" id="settings-back">←</button>
+      <div class="topbar-title">Settings</div>
+      <div style="width:38px;"></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Your Name</div>
+      <div class="settings-name-row">
+        <input class="input-field" id="settings-name" type="text" placeholder="Your name">
+        <button class="btn-save-name" id="btn-save-name">Save</button>
+      </div>
+    </div>
+    <div class="settings-divider"></div>
+    <div class="settings-section">
+      <div class="settings-section-title">My Progress</div>
+      <button class="settings-btn" id="btn-export">
+        <span class="settings-btn-icon">💾</span> Save My Progress
+      </button>
+      <div style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px;line-height:1.6;">Generates a code you can send to yourself on WhatsApp. Keep it safe.</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;font-weight:500;">Welcome back. Paste your code below to pick up exactly where you left off.</div>
+      <div style="display:flex;gap:8px;">
+        <input class="input-field" id="restore-code-input" type="text" placeholder="Paste your code here…" style="margin-bottom:0;flex:1;font-size:13px;">
+        <button class="btn-save-name" id="btn-restore-code">Restore →</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none;">
+    </div>
+    <div class="settings-divider"></div>
+    <div class="settings-section" id="install-section">
+      <div class="settings-section-title">Install App</div>
+      <!-- Android: shown when beforeinstallprompt fires -->
+      <button class="settings-btn" id="btn-install" style="display:none;">
+        <span class="settings-btn-icon">📲</span> Add to Home Screen
+      </button>
+      <!-- iOS: shown on iPhone/iPad Safari -->
+      <div id="ios-install-tip" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;font-size:13px;line-height:1.7;color:var(--text-muted);">
+        On iPhone, tap the <strong style="color:var(--text);">Share button</strong> <span style="font-size:16px;">⬆️</span> at the bottom of Safari, then tap <strong style="color:var(--text);">"Add to Home Screen"</strong>. The app will appear on your home screen like any other app.
+      </div>
+      <!-- Already installed -->
+      <div id="already-installed" style="display:none;font-size:13px;color:var(--strong);padding:4px 0;">✓ Already installed as an app</div>
+    </div>
+    <div class="settings-divider"></div>
+    <div class="settings-section">
+      <div class="settings-section-title">Danger Zone</div>
+      <button class="settings-btn danger" id="btn-reset">
+        <span class="settings-btn-icon">🗑️</span> Reset All Data
+      </button>
+    </div>
+  </div>
+
+  <!-- LOG MODAL (from dashboard FAB) -->
+  <div class="modal-overlay" id="log-modal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Log a Paper</div>
+      <div class="modal-subject-select">
+        <span class="form-label" style="display:block;font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Subject</span>
+        <select class="input-field" id="modal-subject" style="margin-bottom:0;"></select>
+      </div>
+      <div class="form-row" style="margin-top:14px;">
+        <div class="form-label">Year</div>
+        <select class="input-field" id="modal-year"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Session</div>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="modal-toggle-jan" data-val="January">January</button>
+          <button class="toggle-btn" id="modal-toggle-jun" data-val="June">June</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Paper</div>
+        <div class="toggle-group">
+          <button class="toggle-btn paper2 active" id="modal-toggle-p2" data-val="2">Paper 2</button>
+          <button class="toggle-btn" id="modal-toggle-p1" data-val="1">Paper 1</button>
+        </div>
+      </div>
+      <div class="form-error" id="modal-form-error">Already logged this paper.</div>
+      <button class="btn-log" id="modal-btn-log">Log Paper</button>
+    </div>
+  </div>
+
+  <!-- BACKUP CODE MODAL -->
+  <div class="modal-overlay" id="backup-modal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Save My Progress</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">Copy this code and send it to yourself on WhatsApp. If you ever lose your data, paste it back here to restore everything up to this point.</p>
+      <div id="backup-code-display" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;font-size:12px;font-family:monospace;word-break:break-all;color:var(--accent2);margin-bottom:12px;line-height:1.6;max-height:120px;overflow-y:auto;"></div>
+      <button class="btn-log" id="btn-copy-backup">Copy Code</button>
+      <button class="btn-log" id="btn-share-backup" style="margin-top:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);">Send via WhatsApp</button>
+      <button class="btn-log" id="btn-close-backup" style="margin-top:8px;background:transparent;border:none;color:var(--text-muted);">Done</button>
+    </div>
+  </div>
+
+  <!-- SHARE CHOICE MODAL (subject) -->
+  <div class="modal-overlay" id="share-choice-modal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Share your progress</div>
+      <button class="btn-log" id="share-pretty">✨ Pretty Card — for WhatsApp / IG</button>
+      <button class="btn-log" id="share-list" style="margin-top:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);">📋 Paper List — for comparing with friends</button>
+      <button class="btn-log" id="share-cancel" style="margin-top:10px;background:transparent;border:none;color:var(--text-muted);">Cancel</button>
+    </div>
+  </div>
+
+  <!-- SHARE CHOICE MODAL (dashboard all) -->
+  <div class="modal-overlay" id="share-all-choice-modal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Share all subjects</div>
+      <button class="btn-log" id="share-all-pretty">✨ Pretty Card — full subject slate</button>
+      <button class="btn-log" id="share-all-list" style="margin-top:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);">📋 Full Summary — all papers listed</button>
+      <button class="btn-log" id="share-all-cancel" style="margin-top:10px;background:transparent;border:none;color:var(--text-muted);">Cancel</button>
+    </div>
+  </div>
+
+  <!-- FIND PAPERS MODAL -->
+  <div class="modal-overlay" id="find-papers-modal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="find-papers-title">Find Past Papers</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.5;">Search Google for past papers, mark schemes, and YouTube solutions. Work the paper, check the marks — that's the full loop.</p>
+      <div id="find-papers-links"></div>
+      <button class="btn-log" style="margin-top:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text);" id="find-papers-close">Close</button>
+    </div>
+  </div>
+
+  <!-- GENERATING OVERLAY -->
+  <div class="generating-overlay" id="generating-overlay">
+    <div class="spinner"></div>
+    <div class="generating-text">Generating your card…</div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const DEFAULT_SUBJECTS = [
+  "Mathematics","Additional Mathematics","English A","English B","Biology","Chemistry","Physics",
+  "Geography","History","Information Technology","Principles of Business",
+  "Principles of Accounts","Social Studies","Economics","Agricultural Science",
+  "Spanish","French","Food and Nutrition","Visual Arts","Human and Social Biology",
+  "Integrated Science","Office Administration","Physical Education",
+  "Electronic Document Preparation","Theatre Arts","Music","Technical Drawing",
+  "Electronics","Woodwork","Clothing and Textiles","Home Economics Management",
+  "Electrical and Electronic Technology","Building Technology","Mechanical Engineering Technology",
+  "Industrial Technology","Cape Communication Studies"
+];
+
+const STORAGE_KEY = 'csec_tracker';
+const TARGET = 15;
+
+// ── DATA LAYER ──────────────────────────────────────────────────────────────
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (!d.papers || !d.subjects || !d.studentName) return null;
+    return d;
+  } catch { return null; }
+}
+
+function saveData(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    showToast('⚠️ Storage full — export your data!');
+  }
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function addPaper(data, subject, year, session, paper) {
+  const yearNum = parseInt(year);
+  const paperNum = parseInt(paper);
+  const dup = data.papers.find(p =>
+    p.subject === subject && p.year === yearNum &&
+    p.session === session && p.paper === paperNum
+  );
+  if (dup) return { success: false, error: `Already logged ${session} ${year} Paper ${paper}.` };
+  data.papers.push({
+    id: genId(), subject, year: yearNum, session,
+    paper: paperNum, marked: false, dateAdded: new Date().toISOString()
+  });
+  data.lastUsed = { subject, year: yearNum };
+  saveData(data);
+  return { success: true };
+}
+
+function removePaper(data, id) {
+  data.papers = data.papers.filter(p => p.id !== id);
+  saveData(data);
+}
+
+function toggleMarked(data, id) {
+  const p = data.papers.find(p => p.id === id);
+  if (p) { p.marked = !p.marked; saveData(data); }
+}
+
+function addSubject(data, name) {
+  const clean = name.trim();
+  if (!clean) return false;
+  const title = clean.replace(/\b\w/g, c => c.toUpperCase());
+  if (data.subjects.includes(title)) return false;
+  data.subjects.push(title);
+  saveData(data);
+  return true;
+}
+
+function removeSubject(data, name) {
+  data.subjects = data.subjects.filter(s => s !== name);
+  data.papers = data.papers.filter(p => p.subject !== name);
+  saveData(data);
+}
+
+function getSubjectStats(data, subject) {
+  const all = data.papers.filter(p => p.subject === subject);
+  const p2s = all.filter(p => p.paper === 2);
+  const p1s = all.filter(p => p.paper === 1);
+  const p2Count = p2s.length;
+  const p1Count = p1s.length;
+
+  let tier, color;
+  if (p2Count >= TARGET) { tier = 'Bonus Zone'; color = 'var(--bonus)'; }
+  else if (p2Count >= 10) { tier = 'Strong'; color = 'var(--strong)'; }
+  else if (p2Count >= 5) { tier = 'Building'; color = 'var(--building)'; }
+  else { tier = 'Starting'; color = 'var(--starting)'; }
+
+  const sessions = new Set(all.map(p => p.session));
+  const hasVariety = sessions.has('January') && sessions.has('June');
+
+  let paceWeeks = null;
+  if (p2Count >= 2) {
+    const sorted = p2s.map(p => new Date(p.dateAdded)).sort((a,b)=>a-b);
+    const weeksElapsed = (Date.now() - sorted[0]) / (7*24*60*60*1000);
+    if (weeksElapsed >= 1) {
+      const rate = p2Count / weeksElapsed;
+      const remaining = Math.max(0, TARGET - p2Count);
+      if (rate > 0 && p2Count < TARGET) paceWeeks = Math.ceil(remaining / rate);
+    }
+  }
+
+  return { p2Count, p1Count, tier, color, hasVariety, paceWeeks };
+}
+
+// ── ROUTING ─────────────────────────────────────────────────────────────────
+
+let currentScreen = null;
+
+function router(screen, params = {}) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + screen);
+  if (el) el.classList.add('active');
+  currentScreen = screen;
+  window.scrollTo(0, 0);
+  if (screen === 'dashboard') renderDashboard();
+  if (screen === 'detail') renderDetail(params.subject);
+  if (screen === 'manage') renderManage();
+  if (screen === 'settings') renderSettings();
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────────
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── YEAR SELECTS ─────────────────────────────────────────────────────────────
+
+function populateYearSelect(el, defaultYear) {
+  el.innerHTML = '';
+  const cur = new Date().getFullYear();
+  for (let y = cur; y >= 2010; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === defaultYear) o.selected = true;
+    el.appendChild(o);
+  }
+}
+
+// ── TOGGLE BUTTONS ───────────────────────────────────────────────────────────
+
+function setupToggle(btn1, btn2) {
+  [btn1, btn2].forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn1.classList.remove('active');
+      btn2.classList.remove('active');
+      btn.classList.add('active');
+    });
+  });
+}
+
+function getToggleVal(btn1, btn2) {
+  return btn1.classList.contains('active') ? btn1.dataset.val : btn2.dataset.val;
+}
+
+// ── WELCOME SCREEN ───────────────────────────────────────────────────────────
+
+function initWelcome() {
+  const chips = document.getElementById('welcome-chips');
+  const nameInput = document.getElementById('welcome-name');
+  const startBtn = document.getElementById('welcome-start');
+  const selected = new Set();
+
+  DEFAULT_SUBJECTS.forEach(s => {
+    const chip = document.createElement('div');
+    chip.className = 'subject-chip';
+    chip.textContent = s;
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('selected');
+      selected.has(s) ? selected.delete(s) : selected.add(s);
+      updateStart();
+    });
+    chips.appendChild(chip);
+  });
+
+  function updateStart() {
+    startBtn.disabled = !nameInput.value.trim() || selected.size === 0;
+  }
+
+  nameInput.addEventListener('input', updateStart);
+
+  startBtn.addEventListener('click', () => {
+    if (!nameInput.value.trim() || selected.size === 0) return;
+    const data = {
+      version: 1,
+      studentName: nameInput.value.trim(),
+      subjects: Array.from(selected),
+      papers: [],
+      lastUsed: { subject: Array.from(selected)[0], year: new Date().getFullYear() }
+    };
+    saveData(data);
+    router('dashboard');
+  });
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+
+function renderDashboard() {
+  const data = loadData();
+  if (!data) return;
+
+  document.getElementById('dash-name').textContent = data.studentName;
+  checkSaveNudge();
+
+  // Global stats
+  const totalP2 = data.papers.filter(p => p.paper === 2).length;
+  const totalP1 = data.papers.filter(p => p.paper === 1).length;
+  const greenCount = data.subjects.filter(s => getSubjectStats(data, s).p2Count >= TARGET).length;
+  const statsEl = document.getElementById('dash-stats');
+  statsEl.innerHTML = `
+    <div class="stat-pill">
+      <div class="stat-pill-num" style="color:var(--accent2)">${totalP2}</div>
+      <div class="stat-pill-label">Paper 2s</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-pill-num" style="color:var(--text-muted)">${totalP1}</div>
+      <div class="stat-pill-label">Paper 1s</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-pill-num" style="color:var(--strong)">${greenCount}</div>
+      <div class="stat-pill-label">Strong</div>
+    </div>
+  `;
+
+  // Subject grid
+  const grid = document.getElementById('subjects-grid');
+  grid.innerHTML = '';
+
+  if (data.subjects.length === 0) {
+    grid.outerHTML; // replaced below
+    grid.innerHTML = '';
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.style.gridColumn = '1/-1';
+    empty.innerHTML = `<div class="empty-state-icon">📚</div><div class="empty-state-title">No subjects yet</div><div class="empty-state-text">Tap the 📚 button to add your subjects.</div>`;
+    grid.appendChild(empty);
+    return;
+  }
+
+  data.subjects.forEach(subject => {
+    const stats = getSubjectStats(data, subject);
+    const pct = Math.min(100, (stats.p2Count / TARGET) * 100);
+    const card = document.createElement('div');
+    card.className = 'subject-card';
+    card.style.setProperty('--tier-color', stats.color);
+    card.innerHTML = `
+      <div class="subject-card-name">${escHtml(subject)}</div>
+      <div class="subject-card-p2">${stats.p2Count > TARGET ? TARGET + '+' : stats.p2Count}</div>
+      <div class="subject-card-target">of ${TARGET} Paper 2s</div>
+      <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${pct}%"></div></div>
+      <div class="subject-card-badges">
+        <span class="tier-badge">${stats.tier}</span>
+        ${stats.hasVariety ? '<span class="variety-badge" title="Both Jan & June logged">🌓</span>' : ''}
+        <span class="p1-count">${stats.p1Count > 0 ? stats.p1Count + ' P1' : ''}</span>
+      </div>
+    `;
+    card.addEventListener('click', () => router('detail', { subject }));
+    grid.appendChild(card);
+  });
+}
+
+// ── DETAIL SCREEN ─────────────────────────────────────────────────────────────
+
+let detailSubject = null;
+
+function renderDetail(subject) {
+  detailSubject = subject;
+  const data = loadData();
+  if (!data) return;
+
+  document.getElementById('detail-name').textContent = subject;
+  document.getElementById('detail-topbar-title').textContent = subject;
+
+  const stats = getSubjectStats(data, subject);
+  animateNumber('arc-num', stats.p2Count);
+  document.getElementById('arc-num').style.color = stats.color;
+  animateArc(stats.p2Count, stats.color);
+
+  const badge = document.getElementById('detail-tier-badge');
+  badge.textContent = stats.tier;
+  badge.style.background = `color-mix(in srgb, ${stats.color} 15%, transparent)`;
+  badge.style.color = stats.color;
+
+  document.getElementById('detail-variety-badge').textContent = stats.hasVariety ? '🌓 Jan & June' : '';
+  document.getElementById('detail-p1').textContent = stats.p1Count > 0
+    ? (stats.p2Count === 0
+        ? `So far I completed ${stats.p1Count} Paper 1${stats.p1Count > 1 ? 's' : ''}`
+        : `Also completed ${stats.p1Count} Paper 1${stats.p1Count > 1 ? 's' : ''}`)
+    : '';
+  document.getElementById('detail-pace').textContent = stats.paceWeeks
+    ? `At your current pace, you'll hit ${TARGET} in ~${stats.paceWeeks} week${stats.paceWeeks !== 1 ? 's' : ''}`
+    : stats.p2Count >= TARGET ? '🎉 Target reached! Keep going.' : '';
+
+  // Form defaults
+  const lastYear = data.lastUsed?.year || new Date().getFullYear();
+  populateYearSelect(document.getElementById('form-year'), lastYear);
+  document.getElementById('form-error').classList.remove('show');
+
+  renderPapersList(data, subject);
+}
+
+function drawArc(p2Count, color) {
+  const canvas = document.getElementById('arc-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, r = W/2 - 20;
+  const frac = Math.min(1, p2Count / TARGET);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Track
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, -Math.PI/2, Math.PI * 1.5);
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 16;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  if (p2Count > 0) {
+    const resolvedColor = color.startsWith('var(') ? getComputedStyle(document.documentElement).getPropertyValue(color.slice(4,-1).trim()).trim() : color;
+    const grad = ctx.createLinearGradient(cx - r, cy, cx + r, cy);
+    grad.addColorStop(0, resolvedColor);
+    grad.addColorStop(1, resolvedColor + 'aa');
+
+    const start = -Math.PI / 2 + 0.02;
+    const end = start + frac * Math.PI * 2;
+
+    // Glow
+    ctx.shadowColor = resolvedColor;
+    ctx.shadowBlur = 12;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, start, end);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 16;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+
+    // Bonus ring if past target
+    if (p2Count > TARGET) {
+      const bonusFrac = Math.min(1, (p2Count - TARGET) / TARGET);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r - 22, -Math.PI/2, -Math.PI/2 + bonusFrac * Math.PI * 2);
+      ctx.strokeStyle = 'rgba(139,92,246,0.5)';
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+  }
+}
+
+function animateArc(p2Count, color) {
+  let current = 0;
+  const target = p2Count;
+  const step = () => {
+    current += (target - current) * 0.12;
+    if (Math.abs(target - current) < 0.01) current = target;
+    drawArc(current, color);
+    if (current !== target) requestAnimationFrame(step);
+  };
+  step();
+}
+
+function animateNumber(id, target) {
+  const el = document.getElementById(id);
+  let current = 0;
+  const step = () => {
+    current += (target - current) * 0.15;
+    if (Math.abs(target - current) < 0.1) current = target;
+    el.textContent = Math.round(current);
+    if (current !== target) requestAnimationFrame(step);
+  };
+  step();
+}
+
+function renderPapersList(data, subject) {
+  const list = document.getElementById('papers-list');
+  list.innerHTML = '';
+  const papers = data.papers
+    .filter(p => p.subject === subject)
+    .sort((a, b) => b.year - a.year || (a.session === 'January' ? -1 : 1) || a.paper - b.paper);
+
+  if (papers.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="padding:24px 0;"><div class="empty-state-icon">📝</div><div class="empty-state-title">No papers yet</div><div class="empty-state-text">Log your first paper above.</div></div>`;
+    return;
+  }
+
+  papers.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'paper-item';
+    item.dataset.id = p.id;
+    item.innerHTML = `
+      <span class="paper-pill ${p.paper === 2 ? 'p2' : 'p1'}">P${p.paper}</span>
+      <div class="paper-info">
+        <div>${p.session} ${p.year}</div>
+        <div class="paper-info-sub">Paper ${p.paper}</div>
+      </div>
+      <label class="paper-marked ${p.marked ? 'is-marked' : ''}" title="Mark as reviewed">
+        <input type="checkbox" ${p.marked ? 'checked' : ''} data-id="${p.id}" class="mark-check">
+        ${p.marked ? '✓ Marked' : 'Mark'}
+      </label>
+      <button class="paper-remove" data-id="${p.id}" title="Delete this entry">Delete</button>
+    `;
+    list.appendChild(item);
+  });
+
+  list.querySelectorAll('.mark-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const d = loadData();
+      toggleMarked(d, cb.dataset.id);
+      const label = cb.closest('.paper-marked');
+      label.classList.toggle('is-marked', cb.checked);
+      label.childNodes[label.childNodes.length - 1].textContent = cb.checked ? '✓ Marked' : 'Mark';
+    });
+  });
+
+  list.querySelectorAll('.paper-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Remove this paper?')) return;
+      const d = loadData();
+      removePaper(d, btn.dataset.id);
+      renderDetail(detailSubject);
+    });
+  });
+}
+
+// ── MANAGE ────────────────────────────────────────────────────────────────────
+
+function renderManage() {
+  const data = loadData();
+  if (!data) return;
+
+  const list = document.getElementById('manage-list');
+  list.innerHTML = '';
+  if (data.subjects.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📚</div><div class="empty-state-title">No subjects</div></div>`;
+  } else {
+    data.subjects.forEach(s => {
+      const stats = getSubjectStats(data, s);
+      const item = document.createElement('div');
+      item.className = 'manage-item';
+      item.innerHTML = `
+        <div>
+          <div class="manage-item-name">${escHtml(s)}</div>
+          <div class="manage-item-count">${stats.p2Count} P2 · ${stats.p1Count} P1</div>
+        </div>
+        <button class="btn-remove-subject" data-subject="${escHtml(s)}">Remove</button>
+      `;
+      list.appendChild(item);
+    });
+    list.querySelectorAll('.btn-remove-subject').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.subject;
+        const d = loadData();
+        const count = d.papers.filter(p => p.subject === name).length;
+        const msg = count > 0
+          ? `Remove "${name}"? This will also delete ${count} logged paper${count > 1?'s':''}.`
+          : `Remove "${name}"?`;
+        if (!confirm(msg)) return;
+        removeSubject(d, name);
+        renderManage();
+      });
+    });
+  }
+
+  // Datalist
+  const dl = document.getElementById('default-subjects-list');
+  dl.innerHTML = '';
+  DEFAULT_SUBJECTS.filter(s => !data.subjects.includes(s)).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    dl.appendChild(opt);
+  });
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+
+function renderSettings() {
+  const data = loadData();
+  if (!data) return;
+  document.getElementById('settings-name').value = data.studentName;
+  showInstallState();
+}
+
+// ── SHARE / CANVAS ────────────────────────────────────────────────────────────
+
+function showGenerating(show) {
+  document.getElementById('generating-overlay').classList.toggle('open', show);
+}
+
+async function shareSubjectCard(subject) {
+  showGenerating(true);
+  await sleep(50);
+  try {
+    const canvas = drawSubjectCard(subject);
+    await shareCanvas(canvas, `csec-${subject.replace(/\s+/g,'-').toLowerCase()}.png`);
+  } catch(e) { showToast('Could not generate card.'); }
+  showGenerating(false);
+}
+
+async function shareFullSlate() {
+  const data = loadData();
+  if (!data || data.subjects.length === 0) { showToast('No subjects to share.'); return; }
+  showGenerating(true);
+  await sleep(50);
+  try {
+    const canvas = drawFullSlate(data);
+    await shareCanvas(canvas, 'csec-progress.png');
+  } catch(e) { showToast('Could not generate card.'); }
+  showGenerating(false);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function shareCanvas(canvas, filename) {
+  const dataUrl = canvas.toDataURL('image/png');
+
+  // Try native share first (mobile browsers on HTTPS)
+  try {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'CSEC Past Paper Progress' });
+      return;
+    }
+  } catch {}
+
+  // Fallback: open image in new tab — user can long-press save (iOS) or right-click save
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(`<!DOCTYPE html><html><head><title>CSEC Progress Card</title>
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <style>body{margin:0;background:#090910;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;font-family:sans-serif;}
+      img{max-width:100%;border-radius:12px;}
+      p{color:rgba(255,255,255,0.5);font-size:13px;text-align:center;padding:0 20px;}</style>
+      </head><body><img src="${dataUrl}">
+      <p>Long-press the image to save, then share on WhatsApp or Instagram.</p>
+      </body></html>`);
+    win.document.close();
+  } else {
+    // Last resort: direct download link
+    const a = document.createElement('a');
+    a.href = dataUrl; a.download = filename; a.click();
+  }
+}
+
+// Color map for canvas (CSS vars don't work on canvas)
+const TIER_COLORS = {
+  'Starting':   '#ef4444',
+  'Building':   '#f59e0b',
+  'Strong':     '#10b981',
+  'Bonus Zone': '#8b5cf6'
+};
+
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawSubjectCard(subject) {
+  const data = loadData();
+  const stats = getSubjectStats(data, subject);
+  const W = 1080, H = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const tc = TIER_COLORS[stats.tier];
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#090910');
+  bg.addColorStop(1, '#12121e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle glow
+  const glow = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W*0.7);
+  glow.addColorStop(0, tc + '18');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Decorative top stripe
+  const stripe = ctx.createLinearGradient(0, 0, W, 0);
+  stripe.addColorStop(0, tc);
+  stripe.addColorStop(1, tc + '00');
+  ctx.fillStyle = stripe;
+  ctx.fillRect(0, 0, W, 6);
+
+  // CSEC TRACKER label
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = 'bold 36px system-ui, sans-serif';
+  ctx.letterSpacing = '8px';
+  ctx.fillText('CSEC TRACKER', 80, 100);
+
+  // Student name
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '44px system-ui, sans-serif';
+  ctx.letterSpacing = '0px';
+  ctx.fillText(data.studentName, 80, 172);
+
+  // Subject name
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 72px system-ui, sans-serif';
+  const subjectLines = wrapCanvasText(ctx, subject, W - 160, 72);
+  subjectLines.forEach((line, i) => ctx.fillText(line, 80, 290 + i * 84));
+
+  // Big number
+  const numY = 480;
+  ctx.font = 'bold 280px system-ui, sans-serif';
+  ctx.fillStyle = tc;
+  ctx.fillText(stats.p2Count.toString(), 80, numY);
+  const bigNumWidth = ctx.measureText(stats.p2Count.toString()).width;
+
+  // /15 — sit to the right baseline, smaller so it never overlaps
+  ctx.font = '60px system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.fillText(`/ ${TARGET}`, 80 + bigNumWidth + 20, numY);
+
+  // P2s label
+  ctx.font = '44px system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillText('Paper 2s completed', 80, numY + 60);
+
+  // Progress arc area
+  const arcCx = W - 200, arcCy = 600, arcR = 150;
+  ctx.beginPath();
+  ctx.arc(arcCx, arcCy, arcR, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 24;
+  ctx.stroke();
+
+  if (stats.p2Count > 0) {
+    const frac = Math.min(1, stats.p2Count / TARGET);
+    const grad2 = ctx.createLinearGradient(arcCx - arcR, arcCy, arcCx + arcR, arcCy);
+    grad2.addColorStop(0, tc);
+    grad2.addColorStop(1, tc + 'aa');
+    ctx.beginPath();
+    ctx.arc(arcCx, arcCy, arcR, -Math.PI/2, -Math.PI/2 + frac * Math.PI * 2);
+    ctx.strokeStyle = grad2;
+    ctx.lineWidth = 24;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  // Tier badge
+  const bx = 80, by = 790, bw = 260, bh = 70;
+  drawRoundedRect(ctx, bx, by, bw, bh, 35);
+  ctx.fillStyle = tc + '28';
+  ctx.fill();
+  ctx.strokeStyle = tc + '60';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = tc;
+  ctx.font = 'bold 36px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(stats.tier, bx + bw/2, by + 46);
+  ctx.textAlign = 'left';
+
+  // Variety badge
+  if (stats.hasVariety) {
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '36px system-ui, sans-serif';
+    ctx.fillText('🌓 Jan & June mix', 80, 920);
+  }
+
+  // P1 count — text first, then one orb per paper beside it
+  if (stats.p1Count > 0) {
+    const p1Label = stats.p2Count === 0
+      ? `So far I completed ${stats.p1Count} Paper 1${stats.p1Count > 1 ? 's' : ''}`
+      : `Also completed ${stats.p1Count} Paper 1${stats.p1Count > 1 ? 's' : ''}`;
+    const orbBaseY = 975;
+    const orbR = 12;
+    const orbSpacing = orbR * 2 + 8;
+
+    // Text first
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = '30px system-ui, sans-serif';
+    ctx.fillText(p1Label, 80, orbBaseY);
+    const textWidth = ctx.measureText(p1Label).width;
+
+    // Orbs beside the text (max 10)
+    for (let i = 0; i < Math.min(stats.p1Count, 10); i++) {
+      const ox = 80 + textWidth + 16 + i * orbSpacing + orbR;
+      const oy = orbBaseY - orbR;
+      ctx.beginPath();
+      ctx.arc(ox, oy, orbR, 0, Math.PI * 2);
+      ctx.fillStyle = tc + '33';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(ox, oy, orbR * 0.55, 0, Math.PI * 2);
+      ctx.fillStyle = tc + 'cc';
+      ctx.fill();
+    }
+    if (stats.p1Count > 10) {
+      const afterOrbs = 80 + textWidth + 16 + 10 * orbSpacing + 8;
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '26px system-ui, sans-serif';
+      ctx.fillText(`+${stats.p1Count - 10}`, afterOrbs, orbBaseY);
+    }
+  }
+
+  // Pace
+  if (stats.paceWeeks) {
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '28px system-ui, sans-serif';
+    ctx.fillText(`On track to hit ${TARGET} in ~${stats.paceWeeks} week${stats.paceWeeks !== 1 ? 's' : ''}`, 80, 1030);
+  }
+
+  // Watermark
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.font = '26px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  const today = new Date().toLocaleDateString('en-TT', { year:'numeric', month:'short', day:'numeric' });
+  ctx.fillText(`CSEC Tracker · ${today}`, W - 60, H - 36);
+  ctx.textAlign = 'left';
+
+  return canvas;
+}
+
+function drawFullSlate(data) {
+  const subjects = data.subjects;
+  const cols = 2;
+  const rows = Math.ceil(subjects.length / cols);
+  const W = 1080;
+  const cardH = 180;
+  const padTop = 260;
+  const padBot = 160;
+  const H = padTop + rows * (cardH + 12) + padBot;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#090910');
+  bg.addColorStop(1, '#0f0f1e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top stripe
+  const stripe = ctx.createLinearGradient(0, 0, W, 0);
+  stripe.addColorStop(0, '#6366f1');
+  stripe.addColorStop(0.5, '#a78bfa');
+  stripe.addColorStop(1, '#06b6d4');
+  ctx.fillStyle = stripe;
+  ctx.fillRect(0, 0, W, 6);
+
+  // Header
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.font = 'bold 32px system-ui, sans-serif';
+  ctx.fillText('CSEC TRACKER', 60, 90);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 80px system-ui, sans-serif';
+  ctx.fillText(data.studentName, 60, 190);
+
+  const totalP2 = data.papers.filter(p => p.paper === 2).length;
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '36px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${totalP2} Total P2s`, W - 60, 190);
+  ctx.textAlign = 'left';
+
+  // Subject cards
+  const cw = (W - 60*2 - 20) / 2;
+  subjects.forEach((subject, i) => {
+    const stats = getSubjectStats(data, subject);
+    const tc = TIER_COLORS[stats.tier];
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = 60 + col * (cw + 20);
+    const y = padTop + row * (cardH + 12);
+
+    // Card bg
+    drawRoundedRect(ctx, x, y, cw, cardH, 16);
+    ctx.fillStyle = '#12121e';
+    ctx.fill();
+
+    // Top border
+    drawRoundedRect(ctx, x, y, cw, 4, 2);
+    ctx.fillStyle = tc;
+    ctx.fill();
+
+    // Subject name
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    const nameLines = wrapCanvasText(ctx, subject, cw - 32, 28);
+    nameLines.slice(0, 2).forEach((line, li) => ctx.fillText(line, x + 16, y + 40 + li * 34));
+
+    // P2 count big
+    ctx.fillStyle = tc;
+    ctx.font = 'bold 52px system-ui, sans-serif';
+    ctx.fillText(stats.p2Count.toString(), x + 16, y + 136);
+    const p2NumWidth = ctx.measureText(stats.p2Count.toString()).width;
+
+    // /15 — measured after p2 font, smaller weight so it doesn't crowd
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = '26px system-ui, sans-serif';
+    ctx.fillText(`/${TARGET}`, x + 16 + p2NumWidth + 5, y + 136);
+
+    // Mini bar
+    const bx = x + cw - 140, bw2 = 120, bh2 = 10, barY = y + cardH - 30;
+    drawRoundedRect(ctx, bx, barY, bw2, bh2, 5);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fill();
+    const fillW = Math.min(bw2, (stats.p2Count / TARGET) * bw2);
+    if (fillW > 0) {
+      drawRoundedRect(ctx, bx, barY, fillW, bh2, 5);
+      ctx.fillStyle = tc;
+      ctx.fill();
+    }
+
+    // P1 count + orbs beside it
+    if (stats.p1Count > 0) {
+      // Count text
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = '20px system-ui, sans-serif';
+      const p1Label = `${stats.p1Count} P1`;
+      ctx.fillText(p1Label, x + 16, y + cardH - 12);
+      const labelWidth = ctx.measureText(p1Label).width;
+
+      // Orbs beside the count
+      const orbR = 5;
+      const spacing = orbR * 2 + 4;
+      const maxOrbs = Math.min(3, stats.p1Count);
+      for (let i = 0; i < maxOrbs; i++) {
+        const ox = x + 16 + labelWidth + 10 + i * spacing + orbR;
+        const oy = y + cardH - 12 - orbR;
+        ctx.beginPath();
+        ctx.arc(ox, oy, orbR, 0, Math.PI * 2);
+        ctx.fillStyle = tc + '33';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(ox, oy, orbR * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = tc + 'cc';
+        ctx.fill();
+      }
+      if (stats.p1Count > 3) {
+        const afterOrbs = x + 16 + labelWidth + 10 + maxOrbs * spacing + 4;
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.font = '16px system-ui, sans-serif';
+        ctx.fillText(`+${stats.p1Count - 3}`, afterOrbs, y + cardH - 12);
+      }
+    }
+
+    // Variety
+    if (stats.hasVariety) {
+      ctx.font = '22px system-ui, sans-serif';
+      ctx.fillText('🌓', x + cw - 40, y + 50);
+    }
+  });
+
+  // Watermark
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.font = '28px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  const today = new Date().toLocaleDateString('en-TT', { year:'numeric', month:'short', day:'numeric' });
+  ctx.fillText(`CSEC Tracker · ${today}`, W/2, H - 50);
+
+  return canvas;
+}
+
+function wrapCanvasText(ctx, text, maxWidth, fontSize) {
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const test = current ? current + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else { current = test; }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+// ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
+
+function generateBackupCode() {
+  const data = loadData();
+  if (!data) return null;
+  // Base64 encode the JSON — compact, pasteable, WhatsApp-safe
+  return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+}
+
+function openBackupModal() {
+  const code = generateBackupCode();
+  if (!code) return;
+  document.getElementById('backup-code-display').textContent = code;
+  document.getElementById('backup-modal').classList.add('open');
+  // Mark last saved time
+  const data = loadData();
+  data.lastSaved = Date.now();
+  saveData(data);
+}
+
+function restoreFromCode(code) {
+  try {
+    const json = decodeURIComponent(escape(atob(code.trim())));
+    const d = JSON.parse(json);
+    if (!d.papers || !d.subjects || !d.studentName) throw new Error('Invalid');
+    if (!confirm('This will replace your current data. Continue?')) return;
+    saveData(d);
+    router('dashboard');
+    showToast('✓ Progress restored!');
+  } catch {
+    showToast('⚠️ That code didn\'t work. Check it and try again.');
+  }
+}
+
+function checkSaveNudge() {
+  const data = loadData();
+  if (!data) return;
+  const nudge = document.getElementById('save-nudge');
+  if (!nudge) return;
+  const totalP2 = data.papers.filter(p => p.paper === 2).length;
+  const milestones = [5, 10, 15, 20, 25, 30];
+  const lastNudge = data.lastNudge || 0;
+  const lastSaved = data.lastSaved || 0;
+  // Show nudge if they've hit a milestone and haven't saved since their last milestone
+  const hitMilestone = milestones.some(m => totalP2 >= m && lastNudge < m);
+  if (hitMilestone && totalP2 > 0) {
+    const currentMilestone = milestones.filter(m => totalP2 >= m).pop();
+    if (lastSaved < (data.papers[data.papers.length - 1]?.dateAdded ? new Date(data.papers[data.papers.length-1].dateAdded).getTime() : 0)) {
+      nudge.style.display = 'block';
+      data.lastNudge = currentMilestone;
+      saveData(data);
+    }
+  } else {
+    nudge.style.display = 'none';
+  }
+}
+
+function exportData() {
+  // Keep JSON export available for power users via settings
+  openBackupModal();
+}
+
+function sharePaperList(subject) {
+  const data = loadData();
+  if (!data) return;
+  const papers = data.papers
+    .filter(p => p.subject === subject)
+    .sort((a, b) => b.year - a.year || (a.session === 'January' ? -1 : 1) || a.paper - b.paper);
+  if (papers.length === 0) { showToast('No papers logged yet'); return; }
+
+  let text = `📚 ${subject}\n`;
+  text += `— ${data.studentName}\n\n`;
+  papers.forEach(p => {
+    text += `• ${p.session} ${p.year} – Paper ${p.paper}${p.marked ? ' ✅' : ''}\n`;
+  });
+  text += `\nTracked with CSEC Tracker`;
+
+  if (navigator.share) {
+    navigator.share({ title: `${subject} — ${data.studentName}`, text }).catch(() => copyToClipboard(text));
+  } else {
+    copyToClipboard(text);
+  }
+}
+
+function shareAllList() {
+  const data = loadData();
+  if (!data) return;
+  if (data.subjects.length === 0) { showToast('No subjects yet'); return; }
+
+  let text = `📚 CSEC Progress — ${data.studentName}\n`;
+  text += `${new Date().toLocaleDateString('en-TT', {year:'numeric',month:'short',day:'numeric'})}\n\n`;
+  data.subjects.forEach(subject => {
+    const stats = getSubjectStats(data, subject);
+    const bar = '█'.repeat(Math.min(10, stats.p2Count)) + '░'.repeat(Math.max(0, 10 - stats.p2Count));
+    text += `${subject}\n${bar} ${stats.p2Count}/${TARGET} P2s`;
+    if (stats.p1Count > 0) text += ` · ${stats.p1Count} P1s`;
+    text += `\n\n`;
+  });
+  text += `Tracked with CSEC Tracker`;
+
+  if (navigator.share) {
+    navigator.share({ title: `CSEC Progress — ${data.studentName}`, text }).catch(() => copyToClipboard(text));
+  } else {
+    copyToClipboard(text);
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('✓ Copied to clipboard')).catch(() => showToast('Could not copy'));
+}
+
+function openFindPapers(subject) {
+  const modal = document.getElementById('find-papers-modal');
+  const title = document.getElementById('find-papers-title');
+  const linksEl = document.getElementById('find-papers-links');
+
+  const subjectName = subject || 'All Subjects';
+  title.textContent = subject ? `Find: ${subject}` : 'Find Past Papers';
+
+  const searches = subject ? [
+    { label: `CSEC ${subject} past papers`, q: `CSEC ${subject} past papers` },
+    { label: `CSEC ${subject} past papers PDF`, q: `CSEC ${subject} past papers PDF download` },
+    { label: `CSEC ${subject} mark scheme`, q: `CSEC ${subject} mark scheme` },
+    { label: `CSEC ${subject} Paper 2 solutions YouTube`, q: `CSEC ${subject} Paper 2 solutions YouTube` },
+  ] : [
+    { label: 'CSEC past papers (all subjects)', q: 'CSEC past papers all subjects' },
+    { label: 'CXC past papers PDF', q: 'CXC past papers PDF download' },
+    { label: 'CSEC mark schemes', q: 'CSEC mark schemes download' },
+    { label: 'CSEC past papers YouTube solutions', q: 'CSEC past papers YouTube solutions' },
+  ];
+
+  linksEl.innerHTML = '';
+  searches.forEach(s => {
+    const a = document.createElement('a');
+    a.className = 'find-link';
+    a.textContent = s.label;
+    a.href = `https://www.google.com/search?q=${encodeURIComponent(s.q)}`;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    linksEl.appendChild(a);
+  });
+
+  // Tip
+  const tip = document.createElement('div');
+  tip.className = 'find-tip';
+  tip.textContent = '💡 Tip: Print or download the paper, work it under timed conditions, then check the mark scheme. That\'s the full loop.';
+  linksEl.appendChild(tip);
+
+  modal.classList.add('open');
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!d.papers || !d.subjects || !d.studentName) throw new Error('Invalid');
+      if (!confirm('This will replace ALL your current data. Continue?')) return;
+      saveData(d);
+      router('dashboard');
+      showToast('✓ Data restored');
+    } catch { showToast('⚠️ Invalid backup file'); }
+  };
+  reader.readAsText(file);
+}
+
+// ── UTILITY ──────────────────────────────────────────────────────────────────
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── PWA INSTALL ───────────────────────────────────────────────────────────────
+
+let deferredInstallPrompt = null;
+
+// Catch Android/Chrome install prompt before it fires
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show the button once settings screen is rendered
+  const btn = document.getElementById('btn-install');
+  if (btn) btn.style.display = 'flex';
+});
+
+// If already installed as standalone, mark it
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  showInstallState();
+});
+
+function showInstallState() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  const btn = document.getElementById('btn-install');
+  const iosTip = document.getElementById('ios-install-tip');
+  const alreadyEl = document.getElementById('already-installed');
+  if (!btn) return;
+
+  if (isStandalone) {
+    // Running as installed app
+    btn.style.display = 'none';
+    iosTip.style.display = 'none';
+    alreadyEl.style.display = 'block';
+  } else if (deferredInstallPrompt) {
+    // Android — prompt available
+    btn.style.display = 'flex';
+    iosTip.style.display = 'none';
+    alreadyEl.style.display = 'none';
+  } else {
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIOS) {
+      btn.style.display = 'none';
+      iosTip.style.display = 'block';
+      alreadyEl.style.display = 'none';
+    } else {
+      // Desktop or unsupported — hide the section quietly
+      const section = document.getElementById('install-section');
+      if (section) section.style.display = 'none';
+    }
+  }
+}
+
+// ── EVENT WIRING ─────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  // Welcome
+  initWelcome();
+
+  // Dashboard buttons
+  document.getElementById('btn-manage').addEventListener('click', () => router('manage'));
+  document.getElementById('btn-settings').addEventListener('click', () => router('settings'));
+
+  // FAB opens log modal
+  document.getElementById('fab-log').addEventListener('click', () => {
+    const data = loadData();
+    if (!data || data.subjects.length === 0) {
+      showToast('Add subjects first'); return;
+    }
+    // Populate modal subject dropdown
+    const sel = document.getElementById('modal-subject');
+    sel.innerHTML = '';
+    const lastSubject = data.lastUsed?.subject;
+    data.subjects.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      if (s === lastSubject) o.selected = true;
+      sel.appendChild(o);
+    });
+    populateYearSelect(document.getElementById('modal-year'), data.lastUsed?.year || new Date().getFullYear());
+    document.getElementById('modal-form-error').classList.remove('show');
+    document.getElementById('log-modal').classList.add('open');
+  });
+
+  // Modal close on overlay click
+  document.getElementById('log-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('log-modal'))
+      document.getElementById('log-modal').classList.remove('open');
+  });
+
+  // Modal toggles
+  setupToggle(document.getElementById('modal-toggle-jan'), document.getElementById('modal-toggle-jun'));
+  setupToggle(document.getElementById('modal-toggle-p2'), document.getElementById('modal-toggle-p1'));
+
+  // Modal log button
+  document.getElementById('modal-btn-log').addEventListener('click', () => {
+    const data = loadData();
+    const subject = document.getElementById('modal-subject').value;
+    const year = document.getElementById('modal-year').value;
+    const session = getToggleVal(document.getElementById('modal-toggle-jan'), document.getElementById('modal-toggle-jun'));
+    const paper = getToggleVal(document.getElementById('modal-toggle-p2'), document.getElementById('modal-toggle-p1'));
+    const result = addPaper(data, subject, year, session, paper);
+    if (!result.success) {
+      document.getElementById('modal-form-error').textContent = result.error;
+      document.getElementById('modal-form-error').classList.add('show');
+    } else {
+      document.getElementById('log-modal').classList.remove('open');
+      renderDashboard();
+      showToast(`✓ ${session} ${year} Paper ${paper} logged`);
+    }
+  });
+
+  // Detail back
+  document.getElementById('detail-back').addEventListener('click', () => router('dashboard'));
+
+  // Detail form toggles
+  setupToggle(document.getElementById('toggle-jan'), document.getElementById('toggle-jun'));
+  setupToggle(document.getElementById('toggle-p2'), document.getElementById('toggle-p1'));
+
+  // Set default session based on current month
+  const month = new Date().getMonth();
+  if (month >= 6) {
+    document.getElementById('toggle-jun').click();
+    document.getElementById('modal-toggle-jun').click();
+  }
+
+  // Detail log button
+  document.getElementById('btn-log-paper').addEventListener('click', () => {
+    const data = loadData();
+    const year = document.getElementById('form-year').value;
+    const session = getToggleVal(document.getElementById('toggle-jan'), document.getElementById('toggle-jun'));
+    const paper = getToggleVal(document.getElementById('toggle-p2'), document.getElementById('toggle-p1'));
+    const result = addPaper(data, detailSubject, year, session, paper);
+    if (!result.success) {
+      document.getElementById('form-error').textContent = result.error;
+      document.getElementById('form-error').classList.add('show');
+    } else {
+      document.getElementById('form-error').classList.remove('show');
+      renderDetail(detailSubject);
+      showToast(`✓ ${session} ${year} Paper ${paper} logged`);
+    }
+  });
+
+  // Detail share button → opens choice modal
+  document.getElementById('detail-share-btn').addEventListener('click', () => {
+    if (detailSubject) document.getElementById('share-choice-modal').classList.add('open');
+  });
+
+  // Share choice modal — subject
+  document.getElementById('share-cancel').addEventListener('click', () => {
+    document.getElementById('share-choice-modal').classList.remove('open');
+  });
+  document.getElementById('share-choice-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('share-choice-modal'))
+      document.getElementById('share-choice-modal').classList.remove('open');
+  });
+  document.getElementById('share-pretty').addEventListener('click', () => {
+    document.getElementById('share-choice-modal').classList.remove('open');
+    shareSubjectCard(detailSubject);
+  });
+  document.getElementById('share-list').addEventListener('click', () => {
+    document.getElementById('share-choice-modal').classList.remove('open');
+    sharePaperList(detailSubject);
+  });
+
+  // Dashboard Share All → opens choice modal
+  document.getElementById('btn-share-all').addEventListener('click', () => {
+    document.getElementById('share-all-choice-modal').classList.add('open');
+  });
+
+  // Share choice modal — all subjects
+  document.getElementById('share-all-cancel').addEventListener('click', () => {
+    document.getElementById('share-all-choice-modal').classList.remove('open');
+  });
+  document.getElementById('share-all-choice-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('share-all-choice-modal'))
+      document.getElementById('share-all-choice-modal').classList.remove('open');
+  });
+  document.getElementById('share-all-pretty').addEventListener('click', () => {
+    document.getElementById('share-all-choice-modal').classList.remove('open');
+    shareFullSlate();
+  });
+  document.getElementById('share-all-list').addEventListener('click', () => {
+    document.getElementById('share-all-choice-modal').classList.remove('open');
+    shareAllList();
+  });
+
+  // Detail find papers
+  document.getElementById('detail-find-papers-btn').addEventListener('click', () => {
+    openFindPapers(detailSubject);
+  });
+
+  // Dashboard find papers
+  document.getElementById('btn-find-papers-dash').addEventListener('click', () => {
+    openFindPapers(null);
+  });
+
+  // Find papers modal close
+  document.getElementById('find-papers-close').addEventListener('click', () => {
+    document.getElementById('find-papers-modal').classList.remove('open');
+  });
+  document.getElementById('find-papers-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('find-papers-modal'))
+      document.getElementById('find-papers-modal').classList.remove('open');
+  });
+
+  // Manage back
+  document.getElementById('manage-back').addEventListener('click', () => router('dashboard'));
+
+  // Add subject
+  document.getElementById('btn-add-subject').addEventListener('click', () => {
+    const input = document.getElementById('add-subject-input');
+    const data = loadData();
+    if (!addSubject(data, input.value)) {
+      showToast('Subject already added or empty');
+    } else {
+      input.value = '';
+      renderManage();
+      showToast('✓ Subject added');
+    }
+  });
+
+  // Settings back
+  document.getElementById('settings-back').addEventListener('click', () => router('dashboard'));
+
+  // Install button (Android)
+  document.getElementById('btn-install').addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      deferredInstallPrompt = null;
+      showInstallState();
+      showToast('✓ App installed!');
+    }
+  });
+
+  // Save name
+  document.getElementById('btn-save-name').addEventListener('click', () => {
+    const data = loadData();
+    const name = document.getElementById('settings-name').value.trim();
+    if (!name) return;
+    data.studentName = name;
+    saveData(data);
+    showToast('✓ Name saved');
+  });
+
+  // Save My Progress button (settings)
+  document.getElementById('btn-export').addEventListener('click', openBackupModal);
+
+  // Restore from code (settings)
+  document.getElementById('btn-restore-code').addEventListener('click', () => {
+    const code = document.getElementById('restore-code-input').value.trim();
+    if (!code) { showToast('Paste your code first'); return; }
+    restoreFromCode(code);
+  });
+
+  // Backup modal buttons
+  document.getElementById('btn-copy-backup').addEventListener('click', () => {
+    const code = document.getElementById('backup-code-display').textContent;
+    copyToClipboard(code);
+    showToast('✓ Code copied — paste it into WhatsApp');
+  });
+  document.getElementById('btn-share-backup').addEventListener('click', () => {
+    const code = document.getElementById('backup-code-display').textContent;
+    const text = `My CSEC Tracker backup code — paste this into the app to restore my progress:\n\n${code}`;
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => copyToClipboard(code));
+    } else {
+      copyToClipboard(code);
+      showToast('✓ Code copied');
+    }
+  });
+  document.getElementById('btn-close-backup').addEventListener('click', () => {
+    document.getElementById('backup-modal').classList.remove('open');
+  });
+  document.getElementById('backup-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('backup-modal'))
+      document.getElementById('backup-modal').classList.remove('open');
+  });
+
+  // Dashboard nudge buttons
+  document.getElementById('nudge-save-btn').addEventListener('click', () => {
+    document.getElementById('save-nudge').style.display = 'none';
+    openBackupModal();
+  });
+  document.getElementById('nudge-dismiss-btn').addEventListener('click', () => {
+    document.getElementById('save-nudge').style.display = 'none';
+  });
+
+  // Reset
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    if (!confirm('Start over? This will delete all your logged papers.')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    router('welcome');
+    showToast('All clear — fresh start');
+  });
+
+  // ── INIT ──
+  const data = loadData();
+  if (data) {
+    router('dashboard');
+  } else {
+    router('welcome');
+  }
+
+  // ── SERVICE WORKER ──
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+});
+</script>
+</body>
+</html>
